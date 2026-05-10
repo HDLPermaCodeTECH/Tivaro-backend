@@ -57,7 +57,23 @@ const upload = (0, multer_1.default)({ storage: storage });
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate);
 router.get('/', productController.getProducts);
-router.post('/', upload.single('image'), productController.createProduct);
-router.put('/:id', upload.single('image'), productController.updateProduct);
+router.post('/', (req, res, next) => {
+    upload.single('image')(req, res, (err) => {
+        if (err) {
+            console.error('Multer error during create:', err);
+            return res.status(500).json({ error: 'Failed to upload image', details: err.message });
+        }
+        next();
+    });
+}, productController.createProduct);
+router.put('/:id', (req, res, next) => {
+    upload.single('image')(req, res, (err) => {
+        if (err) {
+            console.error('Multer error during update:', err);
+            return res.status(500).json({ error: 'Failed to upload image', details: err.message });
+        }
+        next();
+    });
+}, productController.updateProduct);
 router.delete('/:id', productController.deleteProduct);
 exports.default = router;
