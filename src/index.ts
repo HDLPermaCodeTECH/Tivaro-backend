@@ -604,9 +604,8 @@ app.use(errorHandler);
 
 async function startServer() {
   try {
-    console.log('⏳ Connecting to database...');
-    await prisma.$connect();
-    console.log('✅ Database connected successfully.');
+    console.log('⏳ Database connection check skipped on startup.');
+    // await prisma.$connect();
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
