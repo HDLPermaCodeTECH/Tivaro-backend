@@ -33,19 +33,6 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// DB Check
-app.get('/db-check', (req, res) => {
-  const fs = require('fs');
-  const path = require('path');
-  const dbPath = path.join(process.cwd(), 'prisma', 'tivaro.db');
-  res.json({
-    cwd: process.cwd(),
-    dbPath: dbPath,
-    exists: fs.existsSync(dbPath),
-    envDbUrl: process.env.DATABASE_URL
-  });
-});
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -619,36 +606,20 @@ app.use(errorHandler);
 
 async function startServer() {
   try {
-    console.log('⏳ Database connection check skipped on startup.');
-    // await prisma.$connect();
+    console.log('⏳ Connecting to database...');
+    await prisma.$connect();
+    console.log('✅ Database connected successfully.');
 
-    console.log('ℹ️ CWD:', process.cwd());
-    console.log('ℹ️ Dirname:', __dirname);
-    console.log('ℹ️ DATABASE_URL:', process.env.DATABASE_URL);
-
-    if (typeof PORT === 'string' && PORT.includes('/')) {
-      app.listen(PORT, () => {
-        console.log(`🚀 Server running on socket ${PORT}`);
-      });
-    } else {
-      app.listen(PORT as any, '0.0.0.0', () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-      });
-    }
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
 
     // Keep event loop alive
     setInterval(() => {
         console.log('💓 Heartbeat: Server is alive...');
     }, 10000);
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Failed to start server:', error);
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      fs.writeFileSync(path.join(process.cwd(), 'crash_log.txt'), `Failed to start server: ${error.message}\n${error.stack}`);
-    } catch (e) {
-      console.error('Failed to write crash log:', e);
-    }
     process.exit(1);
   }
 }
