@@ -33,6 +33,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Fix database columns for base64
+app.get('/api/fix-db', async (req, res) => {
+  try {
+    await prisma.$executeRawUnsafe('ALTER TABLE User MODIFY business_logo LONGTEXT');
+    await prisma.$executeRawUnsafe('ALTER TABLE Product MODIFY image_url LONGTEXT');
+    res.json({ success: true, message: 'Database columns updated to LONGTEXT' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
