@@ -33,7 +33,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 // DB Check
-app.get('/api/db-check', (req, res) => {
+app.get('/db-check', (req, res) => {
     const fs = require('fs');
     const path = require('path');
     const dbPath = path.join(process.cwd(), 'prisma', 'tivaro.db');
