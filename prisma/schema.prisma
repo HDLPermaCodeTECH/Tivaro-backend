@@ -41,6 +41,7 @@ model User {
   suppliers          Supplier[]
   debt_payments      DebtPayment[] @relation("CashierPayments")
   messages           Message[]
+  subscriptions      Subscription[]
   created_at DateTime  @default(now())
 }
 
@@ -198,5 +199,14 @@ model Announcement {
   title      String
   content    String
   type       String   @default("INFO") // INFO, WARNING, MAINTENANCE
+  created_at DateTime @default(now())
+}
+
+model Subscription {
+  id         String   @id @default(uuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  plan       String   // PRO or ENTERPRISE
+  amount     Float
   created_at DateTime @default(now())
 }
