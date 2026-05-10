@@ -45,6 +45,25 @@ app.get('/api/fix-db', async (req, res) => {
   }
 });
 
+// Create Subscription table if not exists
+app.get('/api/fix-db-sub', async (req, res) => {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS Subscription (
+        id VARCHAR(191) PRIMARY KEY,
+        user_id VARCHAR(191) NOT NULL,
+        plan VARCHAR(191) NOT NULL,
+        amount DOUBLE NOT NULL,
+        created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+        FOREIGN KEY (user_id) REFERENCES User(id)
+      )
+    `);
+    res.json({ success: true, message: 'Subscription table created or already exists' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
