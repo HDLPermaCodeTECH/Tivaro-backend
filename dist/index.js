@@ -32,6 +32,18 @@ app.use('/uploads', express_1.default.static('public/uploads'));
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+// DB Check
+app.get('/api/db-check', (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+    const dbPath = path.join(process.cwd(), 'prisma', 'tivaro.db');
+    res.json({
+        cwd: process.cwd(),
+        dbPath: dbPath,
+        exists: fs.existsSync(dbPath),
+        envDbUrl: process.env.DATABASE_URL
+    });
+});
 // Routes
 app.use('/api/auth', auth_routes_1.default);
 app.use('/api/products', product_routes_1.default);
