@@ -33,7 +33,7 @@ model User {
   business_name      String?
   business_address   String?
   business_phone     String?
-  business_logo      String?
+  business_logo      String?   @db.LongText
   receipt_footer     String?
   daily_goal         Float     @default(0)
   last_login_at      DateTime?
@@ -70,7 +70,7 @@ model Product {
   low_stock_threshold Int      @default(5)
   supplier_id         String?
   supplier            Supplier? @relation(fields: [supplier_id], references: [id])
-  image_url           String?
+  image_url           String?   @db.LongText
   sale_items          SaleItem[]
   created_at          DateTime @default(now())
 }
