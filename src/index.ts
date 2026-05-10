@@ -67,7 +67,14 @@ app.get('/api/fix-db-sub', async (req, res) => {
 // Add Mock Subscription
 app.get('/api/dev/subscriptions/add-mock', async (req, res) => {
   try {
-    const user = await (prisma.user as any).findFirst();
+    // Delete all existing subscriptions first (to clean up!)
+    await (prisma as any).subscription.deleteMany({});
+
+    // Find the specific user or first user
+    const user = await (prisma.user as any).findFirst({
+      where: { email: 'support@tivaroapp.com' }
+    }) || await (prisma.user as any).findFirst();
+
     if (!user) {
       return res.status(400).json({ success: false, message: 'No users found to attach subscription' });
     }
@@ -76,13 +83,13 @@ app.get('/api/dev/subscriptions/add-mock', async (req, res) => {
       data: {
         id: Math.random().toString(36).substring(2, 11),
         user_id: user.id,
-        plan: 'PRO',
-        amount: 499,
+        plan: 'ENTERPRISE',
+        amount: 999,
         created_at: new Date()
       }
     });
 
-    res.json({ success: true, message: 'Mock subscription added', data: subscription });
+    res.json({ success: true, message: 'Mock subscription reset to ENTERPRISE 999', data: subscription });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
