@@ -64,6 +64,30 @@ app.get('/api/fix-db-sub', async (req, res) => {
   }
 });
 
+// Add Mock Subscription
+app.get('/api/dev/subscriptions/add-mock', async (req, res) => {
+  try {
+    const user = await (prisma.user as any).findFirst();
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'No users found to attach subscription' });
+    }
+    
+    const subscription = await (prisma as any).subscription.create({
+      data: {
+        id: Math.random().toString(36).substring(2, 11),
+        user_id: user.id,
+        plan: 'PRO',
+        amount: 499,
+        created_at: new Date()
+      }
+    });
+
+    res.json({ success: true, message: 'Mock subscription added', data: subscription });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
