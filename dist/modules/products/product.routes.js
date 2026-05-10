@@ -43,7 +43,12 @@ const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 // Siguraduhing existing ang upload directory
-fs_1.default.mkdirSync('public/uploads', { recursive: true });
+try {
+    fs_1.default.mkdirSync('public/uploads', { recursive: true });
+}
+catch (err) {
+    console.error('Failed to create upload directory:', err);
+}
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'public/uploads/');
