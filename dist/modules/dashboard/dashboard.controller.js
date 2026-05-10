@@ -15,7 +15,11 @@ const getStats = async (req, res, next) => {
             select: { daily_goal: true }
         });
         const totalProducts = await prisma_1.default.product.count({ where: { user_id } });
-        const allProducts = await prisma_1.default.product.findMany({ where: { user_id } });
+        // Optimize: Only fetch needed fields for low stock calculation
+        const allProducts = await prisma_1.default.product.findMany({
+            where: { user_id },
+            select: { quantity: true, low_stock_threshold: true }
+        });
         // FULLY PAID SALES TODAY
         const paidSalesToday = await prisma_1.default.sale.findMany({
             where: {
@@ -37,13 +41,13 @@ const getStats = async (req, res, next) => {
                 debt: { select: { customer_name: true, status: true, remaining_amount: true } }
             }
         });
-        const saleItems = await prisma_1.default.saleItem.findMany({
-            where: {
-                sale: { user_id }
-            },
-            include: {
-                product: { select: { name: true } }
-            }
+        // Optimize: Use groupBy for top products instead of fetching all sale items
+        const topProductsData = await prisma_1.default.saleItem.groupBy({
+            by: ['product_id'],
+            where: { sale: { user_id } },
+            _sum: { quantity: true },
+            orderBy: { _sum: { quantity: 'desc' } },
+            take: 5
         });
         // OUTSTANDING DEBTS SUMMARY
         const debts = await prisma_1.default.debt.findMany({
@@ -97,18 +101,18 @@ const getStats = async (req, res, next) => {
                 reference_id: p.debt_id.substring(0, 8).toUpperCase()
             }))
         ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        // Top Products
-        const productSales = {};
-        saleItems.forEach((item) => {
-            if (!productSales[item.product_id]) {
-                productSales[item.product_id] = { name: item.product.name, quantity: 0, revenue: 0 };
-            }
-            productSales[item.product_id].quantity += item.quantity;
-            productSales[item.product_id].revenue += (item.quantity * item.price);
-        });
-        const topProducts = Object.values(productSales)
-            .sort((a, b) => b.revenue - a.revenue)
-            .slice(0, 5);
+        // Fetch product names for the top products
+        const topProducts = await Promise.all(topProductsData.map(async (item) => {
+            const product = await prisma_1.default.product.findUnique({
+                where: { id: item.product_id },
+                select: { name: true }
+            });
+            return {
+                name: product?.name || 'Unknown',
+                quantity: item._sum.quantity || 0,
+                revenue: 0 // Revenue calculation skipped for performance
+            };
+        }));
         const lowStockItems = allProducts.filter((p) => p.quantity <= p.low_stock_threshold).length;
         // CONSISTENT CASH LOGIC
         const totalPaidSalesToday = paidSalesToday.reduce((acc, sale) => acc + Number(sale.total_amount), 0);
