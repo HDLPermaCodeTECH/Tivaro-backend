@@ -1,44 +1,32 @@
-const http = require('http');
 const path = require('path');
-const fs = require('fs');
 
-const server = http.createServer((req, res) => {
-  // Intercept /db-check route
-  if (req.url === '/db-check') {
-    const dbPath = path.join(__dirname, 'prisma', 'tivaro.db');
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      cwd: process.cwd(),
-      dirname: __dirname,
-      dbPath: dbPath,
-      exists: fs.existsSync(dbPath),
-      envDbUrl: process.env.DATABASE_URL
+console.log('CWD:', process.cwd());
+console.log('Dirname:', __dirname);
+
+// Ang index.js natin ay nagpapatakbo na ng sarili niyang server (app.listen)
+// Kaya hindi na natin kailangan gumawa ng bagong server dito sa server.js.
+// Direkta na lang natin siyang i-require!
+
+try {
+  console.log('Starting app by requiring dist/index.js...');
+  require('./dist/index.js');
+  console.log('App required successfully.');
+} catch (error) {
+  console.error('Failed to load main app:', error);
+  
+  // Fallback server kung sakaling mag-crash ang pag-load
+  const http = require('http');
+  const server = http.createServer((req, res) => {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      status: 'error', 
+      message: 'Failed to load main app in server.js fallback.',
+      error: error.message 
     }));
-    return;
-  }
-
-  // Delegate everything else to the Express app in dist/index.js
-  try {
-    const app = require('./dist/index.js');
-    
-    // If it's a function (Express app), call it
-    if (typeof app === 'function') {
-      app(req, res);
-    } else if (app.default && typeof app.default === 'function') {
-      app.default(req, res);
-    } else {
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('Error: Loaded module is not an Express app.');
-    }
-  } catch (error) {
-    res.writeHead(500, { 'Content-Type': 'text/plain' });
-    res.end('Failed to load main app: ' + error.message);
-  }
-});
-
-const PORT = process.env.PORT || 4000;
-
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+  });
+  
+  const PORT = process.env.PORT || 4000;
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Fallback server running on port ${PORT}`);
+  });
+}
