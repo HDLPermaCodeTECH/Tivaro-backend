@@ -3,14 +3,11 @@ import { PrismaClient } from './generated/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'admin@tivaro.com';
   try {
-    const user = await prisma.user.findUnique({
-      where: { email: email },
-    });
-    console.log(`User found:`, user);
+    const users = await prisma.user.findMany();
+    console.log(`All Users:`, users);
   } catch (error) {
-    console.error('Failed to fetch user:', error);
+    console.error('Failed to fetch users:', error);
   }
 }
 
