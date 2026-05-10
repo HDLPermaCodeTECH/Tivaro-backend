@@ -607,9 +607,19 @@ async function startServer() {
     console.log('⏳ Database connection check skipped on startup.');
     // await prisma.$connect();
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
+    console.log('ℹ️ CWD:', process.cwd());
+    console.log('ℹ️ Dirname:', __dirname);
+    console.log('ℹ️ DATABASE_URL:', process.env.DATABASE_URL);
+
+    if (typeof PORT === 'string' && PORT.includes('/')) {
+      app.listen(PORT, () => {
+        console.log(`🚀 Server running on socket ${PORT}`);
+      });
+    } else {
+      app.listen(PORT as any, '0.0.0.0', () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+      });
+    }
 
     // Keep event loop alive
     setInterval(() => {
