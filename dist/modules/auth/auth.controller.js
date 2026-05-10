@@ -401,7 +401,7 @@ const uploadLogo = async (req, res, next) => {
         if (!req.file) {
             return res.status(400).json({ error: 'Please upload a file' });
         }
-        const logo_url = `http://localhost:4000/uploads/${req.file.filename}`;
+        const logo_url = `/uploads/${req.file.filename}`;
         const updatedUser = await prisma_1.default.user.update({
             where: { id: user.targetUserId },
             data: { business_logo: logo_url },

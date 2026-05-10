@@ -32,6 +32,19 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// DB Check
+app.get('/db-check', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const dbPath = path.join(process.cwd(), 'prisma', 'tivaro.db');
+  res.json({
+    cwd: process.cwd(),
+    dbPath: dbPath,
+    exists: fs.existsSync(dbPath),
+    envDbUrl: process.env.DATABASE_URL
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -625,8 +638,15 @@ async function startServer() {
     setInterval(() => {
         console.log('💓 Heartbeat: Server is alive...');
     }, 10000);
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Failed to start server:', error);
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      fs.writeFileSync(path.join(process.cwd(), 'crash_log.txt'), `Failed to start server: ${error.message}\n${error.stack}`);
+    } catch (e) {
+      console.error('Failed to write crash log:', e);
+    }
     process.exit(1);
   }
 }

@@ -23,7 +23,7 @@ export const createCheckoutSession = async (req: AuthRequest, res: Response, nex
       {
         data: {
           attributes: {
-            cancel_url: 'http://localhost:3000/checkout',
+            cancel_url: `${process.env.FRONTEND_URL || 'https://tivaroapp.com'}/checkout`,
             billing: {
               email: req.user?.email || 'test@example.com'
             },
@@ -37,7 +37,7 @@ export const createCheckoutSession = async (req: AuthRequest, res: Response, nex
               }
             ],
             payment_method_types: ['gcash', 'card'],
-            success_url: 'http://localhost:3000/checkout/success'
+            success_url: `${process.env.FRONTEND_URL || 'https://tivaroapp.com'}/checkout/success`
           }
         }
       },

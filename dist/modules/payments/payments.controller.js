@@ -21,7 +21,7 @@ const createCheckoutSession = async (req, res, next) => {
         const response = await axios_1.default.post('https://api.paymongo.com/v1/checkout_sessions', {
             data: {
                 attributes: {
-                    cancel_url: 'http://localhost:3000/checkout',
+                    cancel_url: `${process.env.FRONTEND_URL || 'https://tivaroapp.com'}/checkout`,
                     billing: {
                         email: req.user?.email || 'test@example.com'
                     },
@@ -35,7 +35,7 @@ const createCheckoutSession = async (req, res, next) => {
                         }
                     ],
                     payment_method_types: ['gcash', 'card'],
-                    success_url: 'http://localhost:3000/checkout/success'
+                    success_url: `${process.env.FRONTEND_URL || 'https://tivaroapp.com'}/checkout/success`
                 }
             }
         }, {

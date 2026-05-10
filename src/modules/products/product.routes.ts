@@ -5,19 +5,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// Siguraduhing existing ang upload directory
-fs.mkdirSync('public/uploads', { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const router = Router();
@@ -25,8 +13,25 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', productController.getProducts);
-router.post('/', upload.single('image'), productController.createProduct);
-router.put('/:id', upload.single('image'), productController.updateProduct);
+router.post('/', (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error during create:', err);
+      return res.status(500).json({ error: 'Failed to upload image', details: err.message });
+    }
+    next();
+  });
+}, productController.createProduct);
+
+router.put('/:id', (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error during update:', err);
+      return res.status(500).json({ error: 'Failed to upload image', details: err.message });
+    }
+    next();
+  });
+}, productController.updateProduct);
 router.delete('/:id', productController.deleteProduct);
 
 export default router;

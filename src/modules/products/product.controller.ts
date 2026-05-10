@@ -31,7 +31,7 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
   try {
     if (req.user!.role === 'STAFF') return res.status(403).json({ error: 'Staff cannot manage products.' });
     const data = productSchema.parse(req.body);
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : data.image_url;
+    const imageUrl = req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : data.image_url;
     const product = await prisma.product.create({
       data: {
         ...data,
@@ -50,7 +50,7 @@ export const updateProduct = async (req: AuthRequest, res: Response, next: NextF
     if (req.user!.role === 'STAFF') return res.status(403).json({ error: 'Staff cannot manage products.' });
     const { id } = req.params;
     const data = productSchema.partial().parse(req.body);
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : data.image_url;
+    const imageUrl = req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : data.image_url;
     const product = await prisma.product.update({
       where: { id: id as string, user_id: req.user!.targetUserId },
       data: {

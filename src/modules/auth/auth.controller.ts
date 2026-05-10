@@ -399,19 +399,7 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
 };
 
 // Multer config for logo
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = 'public/uploads';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+const storage = multer.memoryStorage();
 
 export const upload = multer({ 
   storage,
@@ -434,7 +422,7 @@ export const uploadLogo = async (req: Request, res: Response, next: NextFunction
       return res.status(400).json({ error: 'Please upload a file' });
     }
 
-    const logo_url = `http://localhost:4000/uploads/${req.file.filename}`;
+    const logo_url = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
     const updatedUser = await prisma.user.update({
       where: { id: user.targetUserId },
