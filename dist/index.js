@@ -610,7 +610,8 @@ async function startServer() {
         console.error('❌ Failed to start server:', error);
         try {
             const fs = require('fs');
-            fs.writeFileSync('crash_log.txt', `Failed to start server: ${error.message}\n${error.stack}`);
+            const path = require('path');
+            fs.writeFileSync(path.join(process.cwd(), 'crash_log.txt'), `Failed to start server: ${error.message}\n${error.stack}`);
         }
         catch (e) {
             console.error('Failed to write crash log:', e);

@@ -41,13 +41,11 @@ const getStats = async (req, res, next) => {
                 debt: { select: { customer_name: true, status: true, remaining_amount: true } }
             }
         });
-        // Optimize: Use groupBy for top products instead of fetching all sale items
-        const topProductsData = await prisma_1.default.saleItem.groupBy({
-            by: ['product_id'],
+        // Fetch only the last 100 sale items to prevent timeouts on SQLite
+        const saleItems = await prisma_1.default.saleItem.findMany({
             where: { sale: { user_id } },
-            _sum: { quantity: true },
-            orderBy: { _sum: { quantity: 'desc' } },
-            take: 5
+            take: 100,
+            include: { product: { select: { name: true } } }
         });
         // OUTSTANDING DEBTS SUMMARY
         const debts = await prisma_1.default.debt.findMany({
@@ -101,18 +99,18 @@ const getStats = async (req, res, next) => {
                 reference_id: p.debt_id.substring(0, 8).toUpperCase()
             }))
         ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        // Fetch product names for the top products
-        const topProducts = await Promise.all(topProductsData.map(async (item) => {
-            const product = await prisma_1.default.product.findUnique({
-                where: { id: item.product_id },
-                select: { name: true }
-            });
-            return {
-                name: product?.name || 'Unknown',
-                quantity: item._sum.quantity || 0,
-                revenue: 0 // Revenue calculation skipped for performance
-            };
-        }));
+        // Calculate top products in memory from the limited sample
+        const productSales = {};
+        saleItems.forEach((item) => {
+            if (!productSales[item.product_id]) {
+                productSales[item.product_id] = { name: item.product.name, quantity: 0, revenue: 0 };
+            }
+            productSales[item.product_id].quantity += item.quantity;
+            productSales[item.product_id].revenue += (item.quantity * item.price);
+        });
+        const topProducts = Object.values(productSales)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
         const lowStockItems = allProducts.filter((p) => p.quantity <= p.low_stock_threshold).length;
         // CONSISTENT CASH LOGIC
         const totalPaidSalesToday = paidSalesToday.reduce((acc, sale) => acc + Number(sale.total_amount), 0);

@@ -42,16 +42,17 @@ const auth_middleware_1 = require("../../middleware/auth.middleware");
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const uploadDir = path_1.default.join(process.cwd(), 'public', 'uploads');
 // Siguraduhing existing ang upload directory
 try {
-    fs_1.default.mkdirSync('public/uploads', { recursive: true });
+    fs_1.default.mkdirSync(uploadDir, { recursive: true });
 }
 catch (err) {
     console.error('Failed to create upload directory:', err);
 }
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'public/uploads/');
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
