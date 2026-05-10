@@ -399,19 +399,7 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
 };
 
 // Multer config for logo
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = 'public/uploads';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+const storage = multer.memoryStorage();
 
 export const upload = multer({ 
   storage,
@@ -436,7 +424,7 @@ export const uploadLogo = async (req: Request, res: Response, next: NextFunction
     console.log('uploadLogo called. Body keys:', Object.keys(req.body));
     console.log('uploadLogo req.file:', req.file);
 
-    const logo_url = req.file ? `/uploads/${req.file.filename}` : (req.body.logo || req.body.business_logo);
+    const logo_url = req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : (req.body.logo || req.body.business_logo);
 
     if (!logo_url) {
       console.log('uploadLogo failed: No logo provided');
