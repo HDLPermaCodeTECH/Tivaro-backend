@@ -10,70 +10,68 @@ const getStats = async (req, res, next) => {
         const user_id = req.user.targetUserId;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const [user, totalProducts, allProducts, paidSalesToday, recentSales, saleItems, debts, recentPayments, debtPaymentsToday] = await Promise.all([
-            prisma_1.default.user.findUnique({
-                where: { id: user_id },
-                select: { daily_goal: true }
-            }),
-            prisma_1.default.product.count({ where: { user_id } }),
-            prisma_1.default.product.findMany({ where: { user_id } }),
-            // FULLY PAID SALES TODAY
-            prisma_1.default.sale.findMany({
-                where: {
-                    user_id,
-                    payment_status: 'PAID',
-                    created_at: { gte: today }
-                },
-                select: { total_amount: true }
-            }),
-            // RECENT SALES FOR FEED
-            prisma_1.default.sale.findMany({
-                where: { user_id },
-                orderBy: { created_at: 'desc' },
-                take: 50,
-                include: {
-                    receipt: true,
-                    cashier: { select: { name: true, email: true } },
-                    customer: { select: { name: true } },
-                    debt: { select: { customer_name: true, status: true, remaining_amount: true } }
-                }
-            }),
-            prisma_1.default.saleItem.findMany({
-                where: {
-                    sale: { user_id }
-                },
-                include: {
-                    product: { select: { name: true } }
-                }
-            }),
-            // OUTSTANDING DEBTS SUMMARY
-            prisma_1.default.debt.findMany({
-                where: { user_id, status: { not: 'PAID' } },
-                select: { remaining_amount: true }
-            }),
-            // RECENT PAYMENTS FOR FEED
-            prisma_1.default.debtPayment.findMany({
-                where: { debt: { user_id } },
-                orderBy: { created_at: 'desc' },
-                take: 50,
-                include: {
-                    cashier: { select: { name: true, email: true } }, // ADDED THIS
-                    debt: {
-                        include: {
-                            customer: { select: { name: true } }
-                        }
+        const user = await prisma_1.default.user.findUnique({
+            where: { id: user_id },
+            select: { daily_goal: true }
+        });
+        const totalProducts = await prisma_1.default.product.count({ where: { user_id } });
+        const allProducts = await prisma_1.default.product.findMany({ where: { user_id } });
+        // FULLY PAID SALES TODAY
+        const paidSalesToday = await prisma_1.default.sale.findMany({
+            where: {
+                user_id,
+                payment_status: 'PAID',
+                created_at: { gte: today }
+            },
+            select: { total_amount: true }
+        });
+        // RECENT SALES FOR FEED
+        const recentSales = await prisma_1.default.sale.findMany({
+            where: { user_id },
+            orderBy: { created_at: 'desc' },
+            take: 50,
+            include: {
+                receipt: true,
+                cashier: { select: { name: true, email: true } },
+                customer: { select: { name: true } },
+                debt: { select: { customer_name: true, status: true, remaining_amount: true } }
+            }
+        });
+        const saleItems = await prisma_1.default.saleItem.findMany({
+            where: {
+                sale: { user_id }
+            },
+            include: {
+                product: { select: { name: true } }
+            }
+        });
+        // OUTSTANDING DEBTS SUMMARY
+        const debts = await prisma_1.default.debt.findMany({
+            where: { user_id, status: { not: 'PAID' } },
+            select: { remaining_amount: true }
+        });
+        // RECENT PAYMENTS FOR FEED
+        const recentPayments = await prisma_1.default.debtPayment.findMany({
+            where: { debt: { user_id } },
+            orderBy: { created_at: 'desc' },
+            take: 50,
+            include: {
+                cashier: { select: { name: true, email: true } },
+                debt: {
+                    include: {
+                        customer: { select: { name: true } }
                     }
                 }
-            }),
-            // ALL CASH PAYMENTS/COLLECTIONS TODAY
-            prisma_1.default.debtPayment.findMany({
-                where: {
-                    debt: { user_id },
-                    created_at: { gte: today }
-                },
-                select: { amount: true }
-            })
-        ]);
+            }
+        });
+        // ALL CASH PAYMENTS/COLLECTIONS TODAY
+        const debtPaymentsToday = await prisma_1.default.debtPayment.findMany({
+            where: {
+                debt: { user_id },
+                created_at: { gte: today }
+            },
+            select: { amount: true }
+        });
         // Combined Activity Feed
         const activityFeed = [
             ...recentSales.map(s => ({
