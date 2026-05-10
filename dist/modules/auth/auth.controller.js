@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadLogo = exports.upload = exports.updateProfile = exports.updateStaff = exports.deleteStaff = exports.getStaff = exports.createStaff = exports.upgrade = exports.getShiftSummary = exports.login = exports.register = void 0;
+exports.uploadLogo = exports.upload = exports.updateProfile = exports.updateStaff = exports.deleteStaff = exports.getStaff = exports.createStaff = exports.upgrade = exports.getShiftSummary = exports.getMe = exports.login = exports.register = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = __importDefault(require("../../config/prisma"));
@@ -61,6 +61,10 @@ const login = async (req, res, next) => {
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
+        // Check if user is suspended
+        if (user.is_suspended) {
+            return res.status(403).json({ error: 'Ang iyong account ay suspended. Mangyaring makipag-ugnayan sa support.' });
+        }
         const isPasswordValid = await bcryptjs_1.default.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -81,6 +85,29 @@ const login = async (req, res, next) => {
     }
 };
 exports.login = login;
+const getMe = async (req, res, next) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId)
+            return res.status(401).json({ error: 'Unauthorized' });
+        const user = await prisma_1.default.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true, email: true, name: true, plan: true, role: true,
+                owner_id: true, is_suspended: true,
+                business_name: true, business_address: true, business_phone: true,
+                business_logo: true, receipt_footer: true, daily_goal: true
+            }
+        });
+        if (!user)
+            return res.status(404).json({ error: 'User not found' });
+        res.json({ user });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getMe = getMe;
 const getShiftSummary = async (req, res, next) => {
     try {
         const userId = req.user.userId;
@@ -170,6 +197,9 @@ const createStaff = async (req, res, next) => {
         // Enforce limits
         if (adminUser.plan === 'FREE' && adminUser._count.staff >= 1) {
             return res.status(403).json({ error: 'FREE plan limited to 1 staff account. Please upgrade to PRO.' });
+        }
+        if (adminUser.plan === 'PRO' && adminUser._count.staff >= 2) {
+            return res.status(403).json({ error: 'PRO plan limited to 2 staff accounts. Please upgrade to Ultimate.' });
         }
         const { email, password, name } = registerSchema.parse(req.body);
         const existingUser = await prisma_1.default.user.findUnique({ where: { email } });
